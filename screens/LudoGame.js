@@ -6,19 +6,10 @@ import { yellowInnerPath } from '../constants/yellowInnerPath';
 import { blueInnerPath } from '../constants/blueInnerPath';
 import { greenInnerPath } from '../constants/greenInnerPath';
 
-
-
-
-
-
-
-
-
-
 const GRID_SIZE = 13;
 const maxIndex = Math.max(...Object.values(numbering));
 
- const indexToCoord = {};
+const indexToCoord = {};
 Object.keys(numbering).forEach(numKey => {
   const idx = numbering[numKey];
   const [r, c] = numKey.split(',').map(Number);
@@ -42,7 +33,8 @@ const Grid = () => {
   const innerBlockSize = blockSize * 0.7;
 
   // Default home positions for coins.
-  const redHome = { row: 9, col: 1 };
+  // Updated: redCoins now use different home coordinates based on coin index.
+  const redHomes = [{ row: 9, col: 1 }, { row: 11, col: 3 }];
   const yellowHome = { row: 1, col: 9 };
 
   // Two coins per color with a finished flag.
@@ -381,7 +373,7 @@ const Grid = () => {
           if (coin.finished) return null;
           const coinCoord = coin.innerIndex !== null
             ? redInnerPath[coin.innerIndex]
-            : (coin.position !== null ? indexToCoord[coin.position] : redHome);
+            : (coin.position !== null ? indexToCoord[coin.position] : redHomes[idx]);
           const offset = idx * 5;
           return (
             <TouchableOpacity
