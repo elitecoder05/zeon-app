@@ -673,3 +673,8 @@ const styles = StyleSheet.create({
 });
 
 export default Grid;
+
+
+
+
+//production grade for 2 players
