@@ -33,17 +33,31 @@ const Grid = () => {
   const innerBlockSize = blockSize * 0.7;
 
   // Default home positions for coins.
-  // Red coins use different home coordinates based on coin index.
-  const redHomes = [{ row: 9, col: 1 }, { row: 11, col: 3 }];
-  // Yellow coins now use one at { row: 1, col: 9 } and the other at { row: 3, col: 9 }.
-  const yellowHomes = [{ row: 1, col: 9 }, { row: 3, col: 9 }];
+  // Red coins use four different home coordinates.
+  const redHomes = [
+    { row: 9, col: 3 },
+    { row: 9, col: 1 },
+    { row: 11, col: 3 },
+    { row: 11, col: 1 }
+  ];
+  // Yellow coins use four different home coordinates.
+  const yellowHomes = [
+    { row: 1, col: 9 },
+    { row: 3, col: 9 },
+    { row: 3, col: 11 },
+    { row: 1, col: 11 }
+  ];
 
-  // Two coins per color with a finished flag.
+  // Four coins per color with a finished flag.
   const [redPieces, setRedPieces] = useState([
+    { position: null, innerIndex: null, finished: false },
+    { position: null, innerIndex: null, finished: false },
     { position: null, innerIndex: null, finished: false },
     { position: null, innerIndex: null, finished: false },
   ]);
   const [yellowPieces, setYellowPieces] = useState([
+    { position: null, innerIndex: null, finished: false },
+    { position: null, innerIndex: null, finished: false },
     { position: null, innerIndex: null, finished: false },
     { position: null, innerIndex: null, finished: false },
   ]);
@@ -138,7 +152,7 @@ const Grid = () => {
       } else {
         setCurrentTurn(color === 'red' ? 'yellow' : 'red');
       }
-      setIsAnimating(false); // Reset the animating flag here.
+      setIsAnimating(false);
       checkWinCondition(color);
       return;
     }
@@ -244,10 +258,9 @@ const Grid = () => {
       const coinIndex = eligibleCoins[0];
       const coin = pieces[coinIndex];
       setIsAnimating(true);
-      // For a coin at home, if chosen on a 6, simply bring it out (and extra roll means keep the same turn).
+      // For a coin at home, if chosen on a 6, simply bring it out.
       if (coin.position === null && coin.innerIndex === null && dice === 6) {
         updateCoinPosition(currentTurn, coinIndex, currentTurn === 'red' ? 0 : 22, null);
-        // Turn remains the same since dice is 6.
       } else {
         animateMovement(currentTurn, coinIndex, coin.position, coin.innerIndex, dice);
       }
@@ -322,129 +335,144 @@ const Grid = () => {
   return (
     <View style={styles.screen}>
       <Image source={require('../assets/ludofont.png')} style={styles.headerImage} />
-      <View style={[styles.grid, { width: cellSize * GRID_SIZE, height: cellSize * GRID_SIZE }]}>
-        {cells}
-        {/* Render inner home blocks */}
-        <View style={{
-          position: 'absolute',
-          top: (cellSize * 5 - innerBlockSize) / 2,
-          left: (cellSize * 5 - innerBlockSize) / 2,
-          width: innerBlockSize,
-          height: innerBlockSize,
-          borderRadius: 15,
-          borderWidth: 3,
-          borderColor: 'white',
-          zIndex: 2,
-        }} />
-        <View style={{
-          position: 'absolute',
-          top: (cellSize * 5 - innerBlockSize) / 2,
-          left: cellSize * (GRID_SIZE - 5) + (cellSize * 5 - innerBlockSize) / 2,
-          width: innerBlockSize,
-          height: innerBlockSize,
-          borderRadius: 15,
-          borderWidth: 3,
-          borderColor: 'white',
-          zIndex: 2,
-        }} />
-        <View style={{
-          position: 'absolute',
-          top: cellSize * (GRID_SIZE - 5) + (cellSize * 5 - innerBlockSize) / 2,
-          left: (cellSize * 5 - innerBlockSize) / 2,
-          width: innerBlockSize,
-          height: innerBlockSize,
-          borderRadius: 15,
-          borderWidth: 3,
-          borderColor: 'white',
-          zIndex: 2,
-        }} />
-        <View style={{
-          position: 'absolute',
-          top: cellSize * (GRID_SIZE - 5) + (cellSize * 5 - innerBlockSize) / 2,
-          left: cellSize * (GRID_SIZE - 5) + (cellSize * 5 - innerBlockSize) / 2,
-          width: innerBlockSize,
-          height: innerBlockSize,
-          borderRadius: 15,
-          borderWidth: 3,
-          borderColor: 'white',
-          zIndex: 2,
-        }} />
-        {/* Center dice component */}
-        <TouchableOpacity
-          style={[
-            styles.centerBlock,
-            { left: cellSize * 5, top: cellSize * 5, width: cellSize * 3, height: cellSize * 3 },
-          ]}
-          onPress={onCenterPress}
-        >
-          <Text style={styles.centerText}>
-            {diceValue !== null ? diceValue : 'Roll'}
-          </Text>
-        </TouchableOpacity>
-        {/* Render red coins (ignoring finished coins) */}
-        {redPieces.map((coin, idx) => {
-          if (coin.finished) return null;
-          const coinCoord = coin.innerIndex !== null
-            ? redInnerPath[coin.innerIndex]
-            : (coin.position !== null ? indexToCoord[coin.position] : redHomes[idx]);
-          const offset = idx * 5;
-          return (
-            <TouchableOpacity
-              key={`red-${idx}`}
-              style={{
-                position: 'absolute',
-                top: coinCoord.row * cellSize + offset,
-                left: coinCoord.col * cellSize + offset,
-                zIndex: 3,
-              }}
-              onPress={() => {
-                if (currentTurn === 'red' && pendingMove) {
-                  if (coin.position === null && coin.innerIndex === null && pendingMove.dice === 6) {
-                    updateCoinPosition('red', idx, 0, null);
-                  } else {
-                    setIsAnimating(true);
-                    animateMovement('red', idx, coin.position, coin.innerIndex, pendingMove.dice);
+      {/* Wrap the game grid with a border that reflects the current turn */}
+      <View style={{ borderWidth: 30, borderColor: currentTurn === 'red' ? 'red' : '#FFD700' }}>
+        <View style={[styles.grid, { width: cellSize * GRID_SIZE, height: cellSize * GRID_SIZE }]}>
+          {cells}
+          {/* Render inner home blocks */}
+          <View style={{
+            position: 'absolute',
+            top: (cellSize * 5 - innerBlockSize) / 2,
+            left: (cellSize * 5 - innerBlockSize) / 2,
+            width: innerBlockSize,
+            height: innerBlockSize,
+            borderRadius: 15,
+            borderWidth: 3,
+            borderColor: 'white',
+            zIndex: 2,
+          }} />
+          <View style={{
+            position: 'absolute',
+            top: (cellSize * 5 - innerBlockSize) / 2,
+            left: cellSize * (GRID_SIZE - 5) + (cellSize * 5 - innerBlockSize) / 2,
+            width: innerBlockSize,
+            height: innerBlockSize,
+            borderRadius: 15,
+            borderWidth: 3,
+            borderColor: 'white',
+            zIndex: 2,
+          }} />
+          <View style={{
+            position: 'absolute',
+            top: cellSize * (GRID_SIZE - 5) + (cellSize * 5 - innerBlockSize) / 2,
+            left: (cellSize * 5 - innerBlockSize) / 2,
+            width: innerBlockSize,
+            height: innerBlockSize,
+            borderRadius: 15,
+            borderWidth: 3,
+            borderColor: 'white',
+            zIndex: 2,
+          }} />
+          <View style={{
+            position: 'absolute',
+            top: cellSize * (GRID_SIZE - 5) + (cellSize * 5 - innerBlockSize) / 2,
+            left: cellSize * (GRID_SIZE - 5) + (cellSize * 5 - innerBlockSize) / 2,
+            width: innerBlockSize,
+            height: innerBlockSize,
+            borderRadius: 15,
+            borderWidth: 3,
+            borderColor: 'white',
+            zIndex: 2,
+          }} />
+          {/* Center dice component */}
+          <TouchableOpacity
+            style={[
+              styles.centerBlock,
+              { left: cellSize * 5, top: cellSize * 5, width: cellSize * 3, height: cellSize * 3 },
+            ]}
+            onPress={onCenterPress}
+          >
+            <Text style={styles.centerText}>
+              {diceValue !== null ? diceValue : 'Roll'}
+            </Text>
+          </TouchableOpacity>
+          {/* Render red coins (ignoring finished coins) */}
+          {redPieces.map((coin, idx) => {
+            if (coin.finished) return null;
+            // If the coin is still at home, use the home coordinate without any offset.
+            const isHome = coin.position === null && coin.innerIndex === null;
+            const coinCoord = coin.innerIndex !== null
+              ? redInnerPath[coin.innerIndex]
+              : (coin.position !== null ? indexToCoord[coin.position] : redHomes[idx]);
+            // Only add offset if the coin is in play.
+            const coinOffset = isHome ? 0 : idx * 5;
+            return (
+              <TouchableOpacity
+                key={`red-${idx}`}
+                style={{
+                  position: 'absolute',
+                  top: coinCoord.row * cellSize + coinOffset,
+                  left: coinCoord.col * cellSize + coinOffset,
+                  width: cellSize,
+                  height: cellSize,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  zIndex: 3,
+                }}
+                onPress={() => {
+                  if (currentTurn === 'red' && pendingMove) {
+                    if (coin.position === null && coin.innerIndex === null && pendingMove.dice === 6) {
+                      updateCoinPosition('red', idx, 0, null);
+                    } else {
+                      setIsAnimating(true);
+                      animateMovement('red', idx, coin.position, coin.innerIndex, pendingMove.dice);
+                    }
+                    setPendingMove(null);
                   }
-                  setPendingMove(null);
-                }
-              }}
-            >
-              <Text style={styles.heartText}>❤️</Text>
-            </TouchableOpacity>
-          );
-        })}
-        {/* Render yellow coins (ignoring finished coins) */}
-        {yellowPieces.map((coin, idx) => {
-          if (coin.finished) return null;
-          const coinCoord = coin.innerIndex !== null
-            ? yellowInnerPath[coin.innerIndex]
-            : (coin.position !== null ? indexToCoord[coin.position] : yellowHomes[idx]);
-          const offset = idx * 5;
-          return (
-            <TouchableOpacity
-              key={`yellow-${idx}`}
-              style={{
-                position: 'absolute',
-                top: coinCoord.row * cellSize + offset,
-                left: coinCoord.col * cellSize + offset,
-                zIndex: 3,
-              }}
-              onPress={() => {
-                if (currentTurn === 'yellow' && pendingMove) {
-                  if (coin.position === null && coin.innerIndex === null && pendingMove.dice === 6) {
-                    updateCoinPosition('yellow', idx, 22, null);
-                  } else {
-                    setIsAnimating(true);
-                    animateMovement('yellow', idx, coin.position, coin.innerIndex, pendingMove.dice);
+                }}
+              >
+                <Text style={[styles.heartText, { fontSize: cellSize * 0.6 }]}>❤️</Text>
+              </TouchableOpacity>
+            );
+          })}
+          {/* Render yellow coins (ignoring finished coins) */}
+          {yellowPieces.map((coin, idx) => {
+            if (coin.finished) return null;
+            const isHome = coin.position === null && coin.innerIndex === null;
+            const coinCoord = coin.innerIndex !== null
+              ? yellowInnerPath[coin.innerIndex]
+              : (coin.position !== null ? indexToCoord[coin.position] : yellowHomes[idx]);
+            const coinOffset = isHome ? 0 : idx * 5;
+            return (
+              <TouchableOpacity
+                key={`yellow-${idx}`}
+                style={{
+                  position: 'absolute',
+                  top: coinCoord.row * cellSize + coinOffset,
+                  left: coinCoord.col * cellSize + coinOffset,
+                  width: cellSize,
+                  height: cellSize,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  zIndex: 3,
+                }}
+                onPress={() => {
+                  if (currentTurn === 'yellow' && pendingMove) {
+                    if (coin.position === null && coin.innerIndex === null && pendingMove.dice === 6) {
+                      updateCoinPosition('yellow', idx, 22, null);
+                    } else {
+                      setIsAnimating(true);
+                      animateMovement('yellow', idx, coin.position, coin.innerIndex, pendingMove.dice);
+                    }
+                    setPendingMove(null);
                   }
-                  setPendingMove(null);
-                }
-              }}
-            >
-              <Text style={styles.heartText}>💛</Text>
-            </TouchableOpacity>
-          );
-        })}
+                }}
+              >
+                <Text style={[styles.heartText, { fontSize: cellSize * 0.6 }]}>💛</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
       <Text style={styles.turnText}>Current Turn: {currentTurn.toUpperCase()}</Text>
     </View>
@@ -490,8 +518,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   heartText: {
-    fontSize: 24,
-    zIndex: 3,
     textAlign: 'center',
   },
   safeZoneStar: {
