@@ -3,6 +3,8 @@ export const blueInnerPath = [
     { row: 6, col: 2, label: 'b2' },
     { row: 6, col: 3, label: 'b3' },
     { row: 6, col: 4, label: 'b4' },
+    { row: 6, col: 5, label: 'b5' },
+
   ];
   
   export default blueInnerPath;

@@ -4,7 +4,6 @@ import { numbering } from '../constants/numbering';
 import { redInnerPath } from '../constants/redInnerPath';
 import { yellowInnerPath } from '../constants/yellowInnerPath';
 import { blueInnerPath } from '../constants/blueInnerPath';
-import { greenInnerPath } from '../constants/greenInnerPath';
 
 const GRID_SIZE = 13;
 const maxIndex = Math.max(...Object.values(numbering));
@@ -31,30 +30,26 @@ const getStartingPosition = (color) => {
   if (color === 'red') return 0;
   else if (color === 'blue') return 11; // Blue pieces start at index 11 (cell 5,1)
   else if (color === 'yellow') return 22;
-  else if (color === 'green') return 33;
 };
 
 const getThreshold = (color) => {
   if (color === 'red') return 42;
-  else if (color === 'blue') return 9;   // Blue enters its inner path after reaching index 9
+  else if (color === 'blue') return 50; // Updated blue threshold (was 9) to allow movement from index 11 onward.
   else if (color === 'yellow') return 20;
-  else if (color === 'green') return 31;
 };
 
 const getInnerPath = (color) => {
   if (color === 'red') return redInnerPath;
   else if (color === 'blue') return blueInnerPath;
   else if (color === 'yellow') return yellowInnerPath;
-  else if (color === 'green') return greenInnerPath;
 };
 
 // Define turn order and border colors.
-const players = ['red', 'blue', 'yellow', 'green'];
+const players = ['red', 'blue', 'yellow'];
 const getBorderColor = (color) => {
   if (color === 'red') return 'red';
   else if (color === 'blue') return 'blue';
   else if (color === 'yellow') return '#FFD700';
-  else if (color === 'green') return 'green';
 };
 
 const nextTurn = (current) => {
@@ -75,23 +70,17 @@ const Grid = () => {
     { row: 11, col: 1 },
     { row: 11, col: 3 }
   ];
-  const yellowHomes = [
-    { row: 1, col: 9 },
-    { row: 3, col: 9 },
-    { row: 3, col: 11 },
-    { row: 1, col: 11 }
-  ];
   const blueHomes = [
     { row: 1, col: 1 },
     { row: 1, col: 3 },
     { row: 3, col: 1 },
     { row: 3, col: 3 }
   ];
-  const greenHomes = [
-    { row: 9, col: 9 },
-    { row: 9, col: 11 },
-    { row: 11, col: 9 },
-    { row: 11, col: 11 }
+  const yellowHomes = [
+    { row: 1, col: 9 },
+    { row: 3, col: 9 },
+    { row: 3, col: 11 },
+    { row: 1, col: 11 }
   ];
 
   // Four coins per color.
@@ -108,12 +97,6 @@ const Grid = () => {
     { position: null, innerIndex: null, finished: false },
   ]);
   const [yellowPieces, setYellowPieces] = useState([
-    { position: null, innerIndex: null, finished: false },
-    { position: null, innerIndex: null, finished: false },
-    { position: null, innerIndex: null, finished: false },
-    { position: null, innerIndex: null, finished: false },
-  ]);
-  const [greenPieces, setGreenPieces] = useState([
     { position: null, innerIndex: null, finished: false },
     { position: null, innerIndex: null, finished: false },
     { position: null, innerIndex: null, finished: false },
@@ -146,21 +129,23 @@ const Grid = () => {
         updated[coinIndex] = { position: newPos, innerIndex: newInnerIdx, finished };
         return updated;
       });
-    } else if (color === 'green') {
-      setGreenPieces(prev => {
-        const updated = [...prev];
-        updated[coinIndex] = { position: newPos, innerIndex: newInnerIdx, finished };
-        return updated;
-      });
     }
   };
 
   // Check collision at the final destination.
   const checkCollision = (currentColor, movingCoord) => {
     let opponentPieces;
-    if (currentColor === 'red') opponentPieces = yellowPieces;
-    else if (currentColor === 'yellow') opponentPieces = redPieces;
-    // (For brevity, collision logic for blue/green isn’t shown here but can be added similarly.)
+    if (currentColor === 'red') {
+      opponentPieces = yellowPieces;
+    } else if (currentColor === 'yellow') {
+      opponentPieces = redPieces;
+    } else if (currentColor === 'blue') {
+      // For blue, you might want to consider collisions with both red and yellow coins.
+      opponentPieces = [...redPieces, ...yellowPieces];
+    } else if (currentColor === 'green') {
+      // Define collision logic for green if needed.
+      opponentPieces = []; // or appropriate logic
+    }
     opponentPieces.forEach((coin, idx) => {
       if (coin.finished) return;
       const coinCoord = coin.innerIndex !== null
@@ -188,14 +173,13 @@ const Grid = () => {
       }
     });
   };
-
+  
   // Check win condition.
   const checkWinCondition = (color) => {
     let pieces;
     if (color === 'red') pieces = redPieces;
     else if (color === 'blue') pieces = bluePieces;
     else if (color === 'yellow') pieces = yellowPieces;
-    else if (color === 'green') pieces = greenPieces;
 
     const allFinished = pieces.every(coin => coin.finished);
     if (allFinished) {
@@ -221,8 +205,7 @@ const Grid = () => {
       if (diceValue === 6) {
         setCurrentTurn(color);
       } else {
-        // For simplicity, switching between red and yellow here only.
-        setCurrentTurn(color === 'red' ? 'yellow' : 'red');
+        setCurrentTurn(nextTurn(color));
       }
       setIsAnimating(false);
       checkWinCondition(color);
@@ -235,7 +218,7 @@ const Grid = () => {
         if (diceValue === 6) {
           setCurrentTurn(color);
         } else {
-          setCurrentTurn(color === 'red' ? 'yellow' : 'red');
+          setCurrentTurn(nextTurn(color));
         }
         setIsAnimating(false);
         return;
@@ -262,8 +245,8 @@ const Grid = () => {
           }
         } else if (color === 'blue') {
           if (currentPos < threshold) {
-            // For blue, move forward (from 11 up to threshold)
-            newPos = currentPos + 1;
+            // For blue, use modulo arithmetic so that if the coin exceeds maxIndex it wraps around.
+            newPos = (currentPos + 1) % (maxIndex + 1);
             newCoord = indexToCoord[newPos];
           } else if (currentPos === threshold) {
             newInnerIdx = 0;
@@ -307,7 +290,6 @@ const Grid = () => {
     if (currentTurn === 'red') { pieces = redPieces; homes = redHomes; }
     else if (currentTurn === 'blue') { pieces = bluePieces; homes = blueHomes; }
     else if (currentTurn === 'yellow') { pieces = yellowPieces; homes = yellowHomes; }
-    else if (currentTurn === 'green') { pieces = greenPieces; homes = greenHomes; }
 
     let eligibleCoins = [];
     pieces.forEach((coin, idx) => {
@@ -323,7 +305,7 @@ const Grid = () => {
 
     if (eligibleCoins.length === 0) {
       if (dice !== 6) {
-        setCurrentTurn(currentTurn === 'red' ? 'yellow' : 'red');
+        setCurrentTurn(nextTurn(currentTurn));
       }
       return;
     }
@@ -360,8 +342,6 @@ const Grid = () => {
         cellStyle.push({ backgroundColor: '#FFD700' });
       } else if (row === 5 && col === 1) {
         cellStyle.push({ backgroundColor: '#206ce6' });
-      } else if (row === 7 && col === 11) {
-        cellStyle.push({ backgroundColor: 'green' });
       }
     }
     if (isColoredCorner) {
@@ -372,7 +352,7 @@ const Grid = () => {
       } else if (row >= GRID_SIZE - 5 && col < 5) {
         cellStyle.push({ backgroundColor: 'red' });
       } else if (row >= GRID_SIZE - 5 && col >= GRID_SIZE - 5) {
-        cellStyle.push({ backgroundColor: 'green' });
+        cellStyle.push({ backgroundColor: '#FFD700' });
       }
       cellStyle.push({ borderWidth: 0 });
     }
@@ -391,10 +371,6 @@ const Grid = () => {
     if (isBlueInner) {
       cellStyle.push({ backgroundColor: '#206ce6' });
     }
-    const isGreenInner = greenInnerPath.some(item => item.row === row && item.col === col);
-    if (isGreenInner) {
-      cellStyle.push({ backgroundColor: 'green' });
-    }
     return (
       <View key={index} style={cellStyle}>
         {isSafeZone({ row, col }) && (
@@ -408,7 +384,7 @@ const Grid = () => {
     <View style={styles.screen}>
       <Image source={require('../assets/ludofont.png')} style={styles.headerImage} />
       {/* Wrap game grid with a border showing current turn */}
-      <View style={{ borderWidth: 30, borderColor: currentTurn === 'red' ? 'red' : '#FFD700' }}>
+      <View style={{ borderWidth: 30, borderColor: getBorderColor(currentTurn) }}>
         <View style={[styles.grid, { width: cellSize * GRID_SIZE, height: cellSize * GRID_SIZE }]}>
           {cells}
           {/* Render inner home blocks */}
@@ -501,7 +477,7 @@ const Grid = () => {
                 onPress={() => {
                   if (currentTurn === 'red' && pendingMove) {
                     if (coin.position === null && coin.innerIndex === null && pendingMove.dice === 6) {
-                      updateCoinPosition('red', idx, 0, null);
+                      updateCoinPosition('red', idx, getStartingPosition('red'), null);
                     } else {
                       setIsAnimating(true);
                       animateMovement('red', idx, coin.position, coin.innerIndex, pendingMove.dice);
@@ -593,7 +569,7 @@ const Grid = () => {
                 onPress={() => {
                   if (currentTurn === 'yellow' && pendingMove) {
                     if (coin.position === null && coin.innerIndex === null && pendingMove.dice === 6) {
-                      updateCoinPosition('yellow', idx, 22, null);
+                      updateCoinPosition('yellow', idx, getStartingPosition('yellow'), null);
                     } else {
                       setIsAnimating(true);
                       animateMovement('yellow', idx, coin.position, coin.innerIndex, pendingMove.dice);
@@ -673,8 +649,3 @@ const styles = StyleSheet.create({
 });
 
 export default Grid;
-
-
-
-
-//production grade for 2 players
