@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "ludo",
+    "slug": "ludo",
+    "version": "1.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "e344bbbb-84e7-47dd-b54f-1fd52ce9a6b4"
+      }
+    },
+    "owner": "siddu12"
+  }
+}
