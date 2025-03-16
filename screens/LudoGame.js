@@ -33,9 +33,10 @@ const Grid = () => {
   const innerBlockSize = blockSize * 0.7;
 
   // Default home positions for coins.
-  // Updated: redCoins now use different home coordinates based on coin index.
+  // Updated: redCoins now use different home coordinates based on coin index,
+  // and yellowCoins use { row:2, col:9 } and { row:4, col:9 } respectively.
   const redHomes = [{ row: 9, col: 1 }, { row: 11, col: 3 }];
-  const yellowHome = { row: 1, col: 9 };
+  const yellowHomes = [{ row: 2, col: 9 }, { row: 4, col: 9 }];
 
   // Two coins per color with a finished flag.
   const [redPieces, setRedPieces] = useState([
@@ -407,7 +408,7 @@ const Grid = () => {
           if (coin.finished) return null;
           const coinCoord = coin.innerIndex !== null
             ? yellowInnerPath[coin.innerIndex]
-            : (coin.position !== null ? indexToCoord[coin.position] : yellowHome);
+            : (coin.position !== null ? indexToCoord[coin.position] : yellowHomes[idx]);
           const offset = idx * 5;
           return (
             <TouchableOpacity
