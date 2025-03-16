@@ -9,8 +9,7 @@ import { greenInnerPath } from '../constants/greenInnerPath';
 const GRID_SIZE = 13;
 const maxIndex = Math.max(...Object.values(numbering));
 
-// Map each index from numbering to its board coordinate.
-const indexToCoord = {};
+ const indexToCoord = {};
 Object.keys(numbering).forEach(numKey => {
   const idx = numbering[numKey];
   const [r, c] = numKey.split(',').map(Number);
