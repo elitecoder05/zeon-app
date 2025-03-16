@@ -32,15 +32,13 @@ const Grid = () => {
   const blockSize = cellSize * 5;
   const innerBlockSize = blockSize * 0.7;
 
-  // Default home positions for coins.
-  // Red coins use four different home coordinates.
+  // Updated red home coordinates.
   const redHomes = [
-    { row: 9, col: 3 },
     { row: 9, col: 1 },
-    { row: 11, col: 3 },
-    { row: 11, col: 1 }
+    { row: 9, col: 3 },
+    { row: 11, col: 1 },
+    { row: 11, col: 3 }
   ];
-  // Yellow coins use four different home coordinates.
   const yellowHomes = [
     { row: 1, col: 9 },
     { row: 3, col: 9 },
@@ -48,7 +46,7 @@ const Grid = () => {
     { row: 1, col: 11 }
   ];
 
-  // Four coins per color with a finished flag.
+  // Only red and yellow pieces are defined here.
   const [redPieces, setRedPieces] = useState([
     { position: null, innerIndex: null, finished: false },
     { position: null, innerIndex: null, finished: false },
@@ -335,7 +333,7 @@ const Grid = () => {
   return (
     <View style={styles.screen}>
       <Image source={require('../assets/ludofont.png')} style={styles.headerImage} />
-      {/* Wrap the game grid with a border that reflects the current turn */}
+      {/* Wrap game grid with a border showing current turn */}
       <View style={{ borderWidth: 30, borderColor: currentTurn === 'red' ? 'red' : '#FFD700' }}>
         <View style={[styles.grid, { width: cellSize * GRID_SIZE, height: cellSize * GRID_SIZE }]}>
           {cells}
@@ -396,23 +394,36 @@ const Grid = () => {
               {diceValue !== null ? diceValue : 'Roll'}
             </Text>
           </TouchableOpacity>
-          {/* Render red coins (ignoring finished coins) */}
+          {/* Render red coins with vertical stacking */}
           {redPieces.map((coin, idx) => {
             if (coin.finished) return null;
-            // If the coin is still at home, use the home coordinate without any offset.
-            const isHome = coin.position === null && coin.innerIndex === null;
+            // Determine the coin's cell coordinate.
             const coinCoord = coin.innerIndex !== null
               ? redInnerPath[coin.innerIndex]
               : (coin.position !== null ? indexToCoord[coin.position] : redHomes[idx]);
-            // Only add offset if the coin is in play.
-            const coinOffset = isHome ? 0 : idx * 5;
+            // Create a cell key for grouping.
+            const cellKey = `${coinCoord.row},${coinCoord.col}`;
+            // Find all red coins that share this cell.
+            const coinsInCell = redPieces.filter(c => {
+              let cCoord;
+              if (c.innerIndex !== null) cCoord = redInnerPath[c.innerIndex];
+              else if (c.position !== null) cCoord = indexToCoord[c.position];
+              else cCoord = redHomes[redPieces.indexOf(c)];
+              return `${cCoord.row},${cCoord.col}` === cellKey;
+            });
+            // Find the index of this coin in that group.
+            const groupIndex = coinsInCell.findIndex(c => c === coin);
+            const n = coinsInCell.length;
+            // Calculate a vertical offset so that if there are multiple coins, they're centered.
+            // For example, if spacing is 5 pixels:
+            const verticalOffset = (groupIndex - (n - 1) / 2) * 5;
             return (
               <TouchableOpacity
                 key={`red-${idx}`}
                 style={{
                   position: 'absolute',
-                  top: coinCoord.row * cellSize + coinOffset,
-                  left: coinCoord.col * cellSize + coinOffset,
+                  top: coinCoord.row * cellSize + verticalOffset,
+                  left: coinCoord.col * cellSize,
                   width: cellSize,
                   height: cellSize,
                   justifyContent: 'center',
@@ -435,7 +446,7 @@ const Grid = () => {
               </TouchableOpacity>
             );
           })}
-          {/* Render yellow coins (ignoring finished coins) */}
+          {/* Render yellow coins (unchanged) */}
           {yellowPieces.map((coin, idx) => {
             if (coin.finished) return null;
             const isHome = coin.position === null && coin.innerIndex === null;
