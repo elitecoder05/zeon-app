@@ -7,14 +7,6 @@ import { blueInnerPath } from '../constants/blueInnerPath';
 import { greenInnerPath } from '../constants/greenInnerPath';
 
 
-
-
-
-
-
-
-
-
 const GRID_SIZE = 13;
 const maxIndex = Math.max(...Object.values(numbering));
 
