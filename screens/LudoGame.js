@@ -33,10 +33,10 @@ const Grid = () => {
   const innerBlockSize = blockSize * 0.7;
 
   // Default home positions for coins.
-  // Updated: redCoins now use different home coordinates based on coin index,
-  // and yellowCoins use { row:2, col:9 } and { row:4, col:9 } respectively.
+  // Red coins use different home coordinates based on coin index.
   const redHomes = [{ row: 9, col: 1 }, { row: 11, col: 3 }];
-  const yellowHomes = [{ row: 2, col: 9 }, { row: 4, col: 9 }];
+  // Yellow coins now use one at { row: 1, col: 9 } and the other at { row: 3, col: 9 }.
+  const yellowHomes = [{ row: 1, col: 9 }, { row: 3, col: 9 }];
 
   // Two coins per color with a finished flag.
   const [redPieces, setRedPieces] = useState([
@@ -132,8 +132,13 @@ const Grid = () => {
       } else {
         checkCollision(color, finalCoord);
       }
-      setIsAnimating(false);
-      setCurrentTurn(color === 'red' ? 'yellow' : 'red');
+      // Extra roll rule: if diceValue is 6, keep the turn.
+      if (diceValue === 6) {
+        setCurrentTurn(color);
+      } else {
+        setCurrentTurn(color === 'red' ? 'yellow' : 'red');
+      }
+      setIsAnimating(false); // Reset the animating flag here.
       checkWinCondition(color);
       return;
     }
@@ -142,8 +147,12 @@ const Grid = () => {
     if (currentInnerIdx !== null) {
       const stepsNeeded = (innerPath.length - 1) - currentInnerIdx;
       if (stepsRemaining > stepsNeeded) {
+        if (diceValue === 6) {
+          setCurrentTurn(color);
+        } else {
+          setCurrentTurn(color === 'red' ? 'yellow' : 'red');
+        }
         setIsAnimating(false);
-        setCurrentTurn(color === 'red' ? 'yellow' : 'red');
         return;
       }
     }
@@ -155,7 +164,6 @@ const Grid = () => {
 
       if (currentPos === null && currentInnerIdx === null) {
         // Coin not in play: bring it into play.
-        // **Important:** For a coin at home, if selected on a 6, it only comes out (no extra movement).
         newPos = startingPosition;
         newCoord = indexToCoord[newPos];
         updateCoinPosition(color, coinIndex, newPos, null);
@@ -202,6 +210,7 @@ const Grid = () => {
   // Handle dice press.
   // • If a 6 is rolled and there is an eligible coin at home, let the user choose whether to bring that coin out or move a coin already in play.
   // • If only one eligible coin remains, auto move it.
+  // Extra roll rule: if dice is 6, the turn remains with the same player after the move.
   const onCenterPress = () => {
     if (gameOver || isAnimating || pendingMove) return;
     const dice = Math.floor(Math.random() * 6) + 1;
@@ -223,7 +232,10 @@ const Grid = () => {
     }
 
     if (eligibleCoins.length === 0) {
-      setCurrentTurn(currentTurn === 'red' ? 'yellow' : 'red');
+      // Extra roll rule: if dice is 6, do not change turn.
+      if (dice !== 6) {
+        setCurrentTurn(currentTurn === 'red' ? 'yellow' : 'red');
+      }
       return;
     }
 
@@ -232,10 +244,10 @@ const Grid = () => {
       const coinIndex = eligibleCoins[0];
       const coin = pieces[coinIndex];
       setIsAnimating(true);
-      // For a coin at home, if chosen on a 6, simply bring it out without extra movement.
+      // For a coin at home, if chosen on a 6, simply bring it out (and extra roll means keep the same turn).
       if (coin.position === null && coin.innerIndex === null && dice === 6) {
         updateCoinPosition(currentTurn, coinIndex, currentTurn === 'red' ? 0 : 22, null);
-        setCurrentTurn(currentTurn === 'red' ? 'yellow' : 'red');
+        // Turn remains the same since dice is 6.
       } else {
         animateMovement(currentTurn, coinIndex, coin.position, coin.innerIndex, dice);
       }
@@ -387,10 +399,8 @@ const Grid = () => {
               }}
               onPress={() => {
                 if (currentTurn === 'red' && pendingMove) {
-                  // When a coin at home is chosen on a 6, simply bring it out.
                   if (coin.position === null && coin.innerIndex === null && pendingMove.dice === 6) {
                     updateCoinPosition('red', idx, 0, null);
-                    setCurrentTurn('yellow');
                   } else {
                     setIsAnimating(true);
                     animateMovement('red', idx, coin.position, coin.innerIndex, pendingMove.dice);
@@ -423,7 +433,6 @@ const Grid = () => {
                 if (currentTurn === 'yellow' && pendingMove) {
                   if (coin.position === null && coin.innerIndex === null && pendingMove.dice === 6) {
                     updateCoinPosition('yellow', idx, 22, null);
-                    setCurrentTurn('red');
                   } else {
                     setIsAnimating(true);
                     animateMovement('yellow', idx, coin.position, coin.innerIndex, pendingMove.dice);
